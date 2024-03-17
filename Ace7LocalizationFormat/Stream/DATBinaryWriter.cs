@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ace7Localization.Stream
+namespace Ace7LocalizationFormat.Stream
 {
     public class DATBinaryWriter
     {

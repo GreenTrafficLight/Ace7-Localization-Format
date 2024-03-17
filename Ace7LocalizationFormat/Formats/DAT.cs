@@ -1,8 +1,8 @@
-﻿using Ace7Localization.Stream;
-using Ace7Localization.Utils;
+﻿using Ace7LocalizationFormat.Stream;
+using Ace7LocalizationFormat.Utils;
 using System.IO;
 
-namespace Ace7Localization.Formats
+namespace Ace7LocalizationFormat.Formats
 {
     public class DAT
     {

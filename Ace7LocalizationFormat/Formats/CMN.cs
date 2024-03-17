@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using Ace7Localization.Utils;
-using Ace7Localization.Stream;
+using Ace7LocalizationFormat.Utils;
+using Ace7LocalizationFormat.Stream;
 
-namespace Ace7Localization.Formats
+namespace Ace7LocalizationFormat.Formats
 {
     public class CMN
     {

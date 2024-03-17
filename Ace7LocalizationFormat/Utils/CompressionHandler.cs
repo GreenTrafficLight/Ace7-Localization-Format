@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ace7Localization.Utils
+namespace Ace7LocalizationFormat.Utils
 {
     public class CompressionHandler
     {
