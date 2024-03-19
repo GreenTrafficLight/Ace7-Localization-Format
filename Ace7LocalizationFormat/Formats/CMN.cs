@@ -96,9 +96,10 @@ namespace Ace7LocalizationFormat.Formats
         /// <returns>
         /// Retrun true if the variable didn't exist, false if the variable already exist
         /// </returns>
-        public bool AddVariable(string variable, int? stringNumber = null)
+        public bool AddVariable(string variable, out int variableStringNumber, int? stringNumber = null)
         {
             KeyValuePair<string, CMNString> parent = Root.FirstOrDefault(x => variable.StartsWith(x.Key));
+            variableStringNumber = -1;
             while (parent.Value != null)
             {
                 variable = variable.Remove(0, parent.Key.Length);
@@ -112,6 +113,10 @@ namespace Ace7LocalizationFormat.Formats
                     MaxStringNumber++;
                     MergeVariables(parent, variable, stringNumber);
                     return true;
+                }
+                else
+                {
+                    variableStringNumber = child.Value.StringNumber;
                 }
                 parent = child;
             }
