@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Ace7LocalizationFormat.Utils;
 using Ace7LocalizationFormat.Stream;
+using static Ace7LocalizationFormat.Formats.CMN;
 
 namespace Ace7LocalizationFormat.Formats
 {
@@ -14,19 +15,32 @@ namespace Ace7LocalizationFormat.Formats
         public class CMNString
         {
             public int StringNumber = -1;
+            public string Name = null;
+            public string FullName = null;
             public KeyValuePair<string, CMNString> Parent = new KeyValuePair<string, CMNString>();
             public List<KeyValuePair<string, CMNString>> childrens = new List<KeyValuePair<string, CMNString>>();
 
-            public CMNString(int stringNumber, KeyValuePair<string, CMNString> parent)
+            public CMNString(int stringNumber, string name, KeyValuePair<string, CMNString> parent)
             {
                 StringNumber = stringNumber;
+                Name = name;
+                FullName = name;
                 Parent = parent;
+                if (parent.Key != null && parent.Value != null)
+                {
+                    FullName = GetVariable(parent) + FullName;
+                }
             }
         }
 
         public CMN(string path)
         {
             Read(path);
+        }
+
+        public CMN(byte[] data) 
+        {
+            Read(data);
         }
 
         public List<KeyValuePair<string, CMNString>> Root = new List<KeyValuePair<string, CMNString>>();
@@ -41,6 +55,20 @@ namespace Ace7LocalizationFormat.Formats
         {
             byte[] data = File.ReadAllBytes(path);
 
+            data = DAT.Crypt(data, (uint)data.Length);
+            data = CompressionHandler.Decompress(data);
+
+            DATBinaryReader br = new DATBinaryReader(data);
+
+            Root = ReadVariables(br, new KeyValuePair<string, CMNString>(null, null), Root);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data"></param>
+        public void Read(byte[] data)
+        {
             data = DAT.Crypt(data, (uint)data.Length);
             data = CompressionHandler.Decompress(data);
 
@@ -148,11 +176,11 @@ namespace Ace7LocalizationFormat.Formats
                     string subString = value.Substring(0, index + 1);
 
                     // Make a new node for the merged variable
-                    KeyValuePair<string, CMNString> mergedCMNString = new KeyValuePair<string, CMNString>(subString, new CMNString(-1, parent));
+                    KeyValuePair<string, CMNString> mergedCMNString = new KeyValuePair<string, CMNString>(subString, new CMNString(-1, subString, parent));
 
                     /// Existing node
                     // Substring the variable of the existing node
-                    KeyValuePair<string, CMNString> existingCMNString = new KeyValuePair<string, CMNString>(child.Key.Substring(index + 1), new CMNString(child.Value.StringNumber, mergedCMNString));
+                    KeyValuePair<string, CMNString> existingCMNString = new KeyValuePair<string, CMNString>(child.Key.Substring(index + 1), new CMNString(child.Value.StringNumber, child.Key.Substring(index + 1), mergedCMNString));
                     // Add the childrens of the existing node
                     foreach (KeyValuePair<string, CMNString> existingCMNStringChild in child.Value.childrens){
                         existingCMNString.Value.childrens.Add(existingCMNStringChild);
@@ -162,7 +190,7 @@ namespace Ace7LocalizationFormat.Formats
                     
                     /// New node
                     // Add the new node in the new merged variable
-                    CMNString newCMNString = stringNumber == null ? new CMNString(MaxStringNumber, mergedCMNString) : new CMNString(stringNumber.Value, mergedCMNString);
+                    CMNString newCMNString = stringNumber == null ? new CMNString(MaxStringNumber, subString, mergedCMNString) : new CMNString(stringNumber.Value, subString, mergedCMNString);
                     // Compare the casing and number with the existing node
                     var comparisonResult = string.Compare(value.Substring(index + 1), child.Key.Substring(index + 1), StringComparison.Ordinal);
                     mergedCMNString.Value.childrens.Insert(comparisonResult < 0 ? 0 : mergedCMNString.Value.childrens.Count, new KeyValuePair<string, CMNString>(value.Substring(index + 1), newCMNString));
@@ -185,7 +213,7 @@ namespace Ace7LocalizationFormat.Formats
                 sortIndex++;
             }
             // If there isn't any node to merge
-            parent.Value.childrens.Insert(sortIndex, new KeyValuePair<string, CMNString>(value, stringNumber == null ? new CMNString(MaxStringNumber, parent) : new CMNString(stringNumber.Value, parent)));
+            parent.Value.childrens.Insert(sortIndex, new KeyValuePair<string, CMNString>(value, stringNumber == null ? new CMNString(MaxStringNumber, value, parent) : new CMNString(stringNumber.Value, value, parent)));
         }
 
         /// <summary>
@@ -203,7 +231,8 @@ namespace Ace7LocalizationFormat.Formats
                 if (MaxStringNumber < stringNumber) {
                     MaxStringNumber = stringNumber;
                 }
-                node.Add(new KeyValuePair<string, CMNString>(name, new CMNString(stringNumber, parent)));
+                KeyValuePair<string, CMNString> cmnString = new KeyValuePair<string, CMNString>(name, new CMNString(stringNumber, name, parent));
+                node.Add(cmnString);
                 ReadVariables(br, node.FirstOrDefault(x => x.Key == name), node.FirstOrDefault(x => x.Key == name).Value.childrens);
             }
             return node;
