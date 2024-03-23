@@ -6,21 +6,20 @@ using System.Threading.Tasks;
 using System.IO;
 using Ace7LocalizationFormat.Utils;
 using Ace7LocalizationFormat.Stream;
-using static Ace7LocalizationFormat.Formats.CMN;
 
 namespace Ace7LocalizationFormat.Formats
 {
     public class CMN
     {
-        public class CMNString
+        public class CmnString
         {
             public int StringNumber = -1;
             public string Name = null;
             public string FullName = null;
-            public KeyValuePair<string, CMNString> Parent = new KeyValuePair<string, CMNString>();
-            public List<KeyValuePair<string, CMNString>> childrens = new List<KeyValuePair<string, CMNString>>();
+            public KeyValuePair<string, CmnString> Parent = new KeyValuePair<string, CmnString>();
+            public List<KeyValuePair<string, CmnString>> childrens = new List<KeyValuePair<string, CmnString>>();
 
-            public CMNString(int stringNumber, string name, KeyValuePair<string, CMNString> parent)
+            public CmnString(int stringNumber, string name, KeyValuePair<string, CmnString> parent)
             {
                 StringNumber = stringNumber;
                 Name = name;
@@ -33,6 +32,11 @@ namespace Ace7LocalizationFormat.Formats
             }
         }
 
+        public List<KeyValuePair<string, CmnString>> Root = new List<KeyValuePair<string, CmnString>>();
+        
+        // The highest string number in the CMN
+        public int MaxStringNumber = 0;
+
         public CMN(string path)
         {
             Read(path);
@@ -42,10 +46,6 @@ namespace Ace7LocalizationFormat.Formats
         {
             Read(data);
         }
-
-        public List<KeyValuePair<string, CMNString>> Root = new List<KeyValuePair<string, CMNString>>();
-        // The highest string number in the CMN
-        public int MaxStringNumber = 0;
 
         /// <summary>
         /// Read a CMN file
@@ -60,7 +60,7 @@ namespace Ace7LocalizationFormat.Formats
 
             DATBinaryReader br = new DATBinaryReader(data);
 
-            Root = ReadVariables(br, new KeyValuePair<string, CMNString>(null, null), Root);
+            Root = ReadVariables(br, new KeyValuePair<string, CmnString>(null, null), Root);
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace Ace7LocalizationFormat.Formats
 
             DATBinaryReader br = new DATBinaryReader(data);
 
-            Root = ReadVariables(br, new KeyValuePair<string, CMNString>(null, null), Root);
+            Root = ReadVariables(br, new KeyValuePair<string, CmnString>(null, null), Root);
         }
 
         /// <summary>
@@ -99,13 +99,74 @@ namespace Ace7LocalizationFormat.Formats
         }
 
         /// <summary>
+        /// Add a new variable in the CMN
+        /// </summary>
+        /// <param name="variable">Variable to be added</param>
+        /// <param name="stringNumber">String number tied to this variable</param>
+        /// <returns>
+        /// Retrun true if the variable didn't exist, false if the variable already exist
+        /// </returns>
+        public bool AddVariable(string variable, int? stringNumber = null)
+        {
+            KeyValuePair<string, CmnString> parent = Root.FirstOrDefault(x => variable.StartsWith(x.Key));
+            while (parent.Value != null)
+            {
+                variable = variable.Remove(0, parent.Key.Length);
+                KeyValuePair<string, CmnString> child = parent.Value.childrens.FirstOrDefault(x => variable.StartsWith(x.Key));
+                if (child.Key == null && child.Value == null)
+                {
+                    // Variable already exist
+                    if (variable == "")
+                    {
+                        break;
+                    }
+                    MaxStringNumber++;
+                    MergeVariables(parent, variable, stringNumber);
+                    return true;
+                }
+                parent = child;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Add a new variable in the CMN
+        /// </summary>
+        /// <param name="variable">Variable to be added</param>
+        /// <param name="parent">The parent of the variable that will be added</param>
+        /// <param name="stringNumber">String number tied to this variable</param>
+        /// <returns>Return true if a variable has been successfully added</returns>
+        public bool AddVariable(string variable, KeyValuePair<string, CmnString> parent, int? stringNumber = null)
+        {
+            while (true)
+            {
+                //variable = variable.Remove(0, parent.Key.Length);
+                KeyValuePair<string, CmnString> child = parent.Value.childrens.FirstOrDefault(x => variable.StartsWith(x.Key));
+                if (child.Key == null && child.Value == null)
+                {
+                    // Variable already exist
+                    if (variable == "")
+                    {
+                        break;
+                    }
+                    MaxStringNumber++;
+                    MergeVariables(parent, variable, stringNumber);
+                    return true;
+                }
+                parent = child;
+                variable = variable.Remove(0, parent.Key.Length);
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Get the full variable string from a child CMN
         /// </summary>
         /// <param name="child">The child CMN that we want the full string</param>
         /// <returns>
         /// Return the full variable string of a child CMN
         /// </returns>
-        public static string GetVariable(KeyValuePair<string, CMNString> child)
+        public static string GetVariable(KeyValuePair<string, CmnString> child)
         {
             string variable = child.Key;
             while (child.Value.Parent.Key != null && child.Value.Parent.Value != null)
@@ -117,34 +178,46 @@ namespace Ace7LocalizationFormat.Formats
         }
 
         /// <summary>
-        /// Add a new variable in the CMN
+        /// 
         /// </summary>
-        /// <param name="variable">Variable to be added</param>
-        /// <param name="stringNumber">String number tied to this variable</param>
-        /// <returns>
-        /// Retrun true if the variable didn't exist, false if the variable already exist
-        /// </returns>
-        public bool AddVariable(string variable, out int variableStringNumber, int? stringNumber = null)
+        /// <param name="variable"></param>
+        public int GetVariableStringNumber(string variable)
         {
-            KeyValuePair<string, CMNString> parent = Root.FirstOrDefault(x => variable.StartsWith(x.Key));
-            variableStringNumber = -1;
+            KeyValuePair<string, CmnString> parent = Root.FirstOrDefault(x => variable.StartsWith(x.Key));
+            int variableStringNumber = -1;
             while (parent.Value != null)
             {
                 variable = variable.Remove(0, parent.Key.Length);
-                KeyValuePair<string, CMNString> child = parent.Value.childrens.FirstOrDefault(x => variable.StartsWith(x.Key));
+                KeyValuePair<string, CmnString> child = parent.Value.childrens.FirstOrDefault(x => variable.StartsWith(x.Key));
+                if (child.Key != null && child.Value != null)
+                {
+                    variableStringNumber = child.Value.StringNumber;
+                }
+                parent = child;
+            }
+            return variableStringNumber;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="variable"></param>
+        /// <returns></returns>
+        public bool CheckVariableExist(string variable)
+        {
+            KeyValuePair<string, CmnString> parent = Root.FirstOrDefault(x => variable.StartsWith(x.Key));
+            while (parent.Value != null)
+            {
+                variable = variable.Remove(0, parent.Key.Length);
+                KeyValuePair<string, CmnString> child = parent.Value.childrens.FirstOrDefault(x => variable.StartsWith(x.Key));
                 if (child.Key == null && child.Value == null)
                 {
                     // If the variable doesn't exist
-                    if (variable == ""){
+                    if (variable == "")
+                    {
                         break;
                     }
-                    MaxStringNumber++;
-                    MergeVariables(parent, variable, stringNumber);
                     return true;
-                }
-                else
-                {
-                    variableStringNumber = child.Value.StringNumber;
                 }
                 parent = child;
             }
@@ -152,21 +225,16 @@ namespace Ace7LocalizationFormat.Formats
         }
 
         /// <summary>
-        /// Add a new variable in the CMN
+        /// 
         /// </summary>
-        /// <param name="value">Variable to be added</param>
-        /// <param name="parent">The parent of the variable that will be added</param>
-        /// <param name="stringNumber">String number tied to this variable</param>
-        public void AddVariable(string value, KeyValuePair<string, CMNString> parent, int? stringNumber = null)
-        {
-            MergeVariables(parent, value, stringNumber);
-        }
-        
-        private void MergeVariables(KeyValuePair<string, CMNString> parent, string value, int? stringNumber = null)
+        /// <param name="parent"></param>
+        /// <param name="value"></param>
+        /// <param name="stringNumber"></param>
+        private void MergeVariables(KeyValuePair<string, CmnString> parent, string value, int? stringNumber = null)
         {
             // Index where the added variable will be placed in the parent childrens
             int sortIndex = 0;
-            foreach (KeyValuePair<string, CMNString> child in parent.Value.childrens)
+            foreach (KeyValuePair<string, CmnString> child in parent.Value.childrens)
             {
                 int index = StringUtils.GetCommonSubstringIndex(child.Key, value);
                 
@@ -176,13 +244,13 @@ namespace Ace7LocalizationFormat.Formats
                     string subString = value.Substring(0, index + 1);
 
                     // Make a new node for the merged variable
-                    KeyValuePair<string, CMNString> mergedCMNString = new KeyValuePair<string, CMNString>(subString, new CMNString(-1, subString, parent));
+                    KeyValuePair<string, CmnString> mergedCMNString = new KeyValuePair<string, CmnString>(subString, new CmnString(-1, subString, parent));
 
                     /// Existing node
                     // Substring the variable of the existing node
-                    KeyValuePair<string, CMNString> existingCMNString = new KeyValuePair<string, CMNString>(child.Key.Substring(index + 1), new CMNString(child.Value.StringNumber, child.Key.Substring(index + 1), mergedCMNString));
+                    KeyValuePair<string, CmnString> existingCMNString = new KeyValuePair<string, CmnString>(child.Key.Substring(index + 1), new CmnString(child.Value.StringNumber, child.Key.Substring(index + 1), mergedCMNString));
                     // Add the childrens of the existing node
-                    foreach (KeyValuePair<string, CMNString> existingCMNStringChild in child.Value.childrens){
+                    foreach (KeyValuePair<string, CmnString> existingCMNStringChild in child.Value.childrens){
                         existingCMNString.Value.childrens.Add(existingCMNStringChild);
                     }
                     // Add the existing node in the new merged variable
@@ -190,14 +258,14 @@ namespace Ace7LocalizationFormat.Formats
                     
                     /// New node
                     // Add the new node in the new merged variable
-                    CMNString newCMNString = stringNumber == null ? new CMNString(MaxStringNumber, subString, mergedCMNString) : new CMNString(stringNumber.Value, subString, mergedCMNString);
+                    CmnString newCMNString = stringNumber == null ? new CmnString(MaxStringNumber, value.Substring(index + 1), mergedCMNString) : new CmnString(stringNumber.Value, value.Substring(index + 1), mergedCMNString);
                     // Compare the casing and number with the existing node
                     var comparisonResult = string.Compare(value.Substring(index + 1), child.Key.Substring(index + 1), StringComparison.Ordinal);
-                    mergedCMNString.Value.childrens.Insert(comparisonResult < 0 ? 0 : mergedCMNString.Value.childrens.Count, new KeyValuePair<string, CMNString>(value.Substring(index + 1), newCMNString));
+                    mergedCMNString.Value.childrens.Insert(comparisonResult < 0 ? 0 : mergedCMNString.Value.childrens.Count, new KeyValuePair<string, CmnString>(value.Substring(index + 1), newCMNString));
 
                     /// Parent node
                     // Insert the merged variable in the parent node
-                    parent.Value.childrens.Insert(sortIndex, new KeyValuePair<string, CMNString>(mergedCMNString.Key, mergedCMNString.Value));
+                    parent.Value.childrens.Insert(sortIndex, new KeyValuePair<string, CmnString>(mergedCMNString.Key, mergedCMNString.Value));
                     // Remove the existing node from the parent node
                     parent.Value.childrens.Remove(child);
 
@@ -213,13 +281,13 @@ namespace Ace7LocalizationFormat.Formats
                 sortIndex++;
             }
             // If there isn't any node to merge
-            parent.Value.childrens.Insert(sortIndex, new KeyValuePair<string, CMNString>(value, stringNumber == null ? new CMNString(MaxStringNumber, value, parent) : new CMNString(stringNumber.Value, value, parent)));
+            parent.Value.childrens.Insert(sortIndex, new KeyValuePair<string, CmnString>(value, stringNumber == null ? new CmnString(MaxStringNumber, value, parent) : new CmnString(stringNumber.Value, value, parent)));
         }
 
         /// <summary>
         /// Read the variables inside a binary data
         /// </summary>
-        private List<KeyValuePair<string, CMNString>> ReadVariables(DATBinaryReader br, KeyValuePair<string, CMNString> parent, List<KeyValuePair<string, CMNString>> node)
+        private List<KeyValuePair<string, CmnString>> ReadVariables(DATBinaryReader br, KeyValuePair<string, CmnString> parent, List<KeyValuePair<string, CmnString>> node)
         {
             int count = br.ReadInt32();
             for (int i = 0; i < count; i++)
@@ -231,7 +299,7 @@ namespace Ace7LocalizationFormat.Formats
                 if (MaxStringNumber < stringNumber) {
                     MaxStringNumber = stringNumber;
                 }
-                KeyValuePair<string, CMNString> cmnString = new KeyValuePair<string, CMNString>(name, new CMNString(stringNumber, name, parent));
+                KeyValuePair<string, CmnString> cmnString = new KeyValuePair<string, CmnString>(name, new CmnString(stringNumber, name, parent));
                 node.Add(cmnString);
                 ReadVariables(br, node.FirstOrDefault(x => x.Key == name), node.FirstOrDefault(x => x.Key == name).Value.childrens);
             }
@@ -243,13 +311,13 @@ namespace Ace7LocalizationFormat.Formats
         /// </summary>
         /// <param name="bw"></param>
         /// <param name="parent"></param>
-        private void WriteVariables(DATBinaryWriter bw, KeyValuePair<string, CMNString> parent)
+        private void WriteVariables(DATBinaryWriter bw, KeyValuePair<string, CmnString> parent)
         {
             bw.WriteInt(parent.Key.Length);
             bw.WriteString(parent.Key);
             bw.WriteInt(parent.Value.StringNumber);
             bw.WriteInt(parent.Value.childrens.Count);
-            foreach (KeyValuePair<string, CMNString> child in parent.Value.childrens)
+            foreach (KeyValuePair<string, CmnString> child in parent.Value.childrens)
                 WriteVariables(bw, child);
         }
     }
