@@ -1,4 +1,5 @@
-﻿using Ace7LocalizationFormat.Stream;
+﻿using Ace7Ed;
+using Ace7LocalizationFormat.Stream;
 using Ace7LocalizationFormat.Utils;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,13 @@ namespace Ace7LocalizationFormat.Formats
     public class DAT
     {
         public char Letter;
+        public string Language = null;
         public List<string> Strings = new List<string>();
+
+        public override string ToString()
+        {
+            return Letter + " - " + Language;
+        }
 
         /// <summary>
         /// Read a DAT file from a path
@@ -18,6 +25,7 @@ namespace Ace7LocalizationFormat.Formats
         public DAT(string path, char letter)
         {
             Letter = letter;
+            Language = AceLocalizationConstants.DatLetters[Letter];
             Read(path, letter);
         }
 
