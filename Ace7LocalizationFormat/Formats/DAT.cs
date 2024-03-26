@@ -1,5 +1,6 @@
 ﻿using Ace7LocalizationFormat.Stream;
 using Ace7LocalizationFormat.Utils;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Ace7LocalizationFormat.Formats
@@ -110,7 +111,7 @@ namespace Ace7LocalizationFormat.Formats
 
             data = Crypt(data, size);
 
-            File.WriteAllBytes(filepath + letter + ".dat", data);
+            File.WriteAllBytes(filepath, data);
         }
 
         /// <summary>
