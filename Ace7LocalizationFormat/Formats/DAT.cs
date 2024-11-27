@@ -1,12 +1,31 @@
-﻿using Ace7Ed;
-using Ace7LocalizationFormat.Stream;
+﻿using Ace7LocalizationFormat.Stream;
 using Ace7LocalizationFormat.Utils;
 using System.Collections.Generic;
 using System.IO;
 
 namespace Ace7LocalizationFormat.Formats
 {
-    public class DAT
+    public static class DatConstants
+    {
+        public static Dictionary<char, string> DatLetters = new Dictionary<char, string>
+        {
+            ['A'] = "English",
+            ['B'] = "Traditional Chinese",
+            ['C'] = "French",
+            ['D'] = "German",
+            ['E'] = "Italian",
+            ['F'] = "Japanese",
+            ['G'] = "Korean",
+            ['H'] = "European Spanish",
+            ['I'] = "Latin American Spanish",
+            ['J'] = "Polish",
+            ['K'] = "Brazilian Portugese",
+            ['L'] = "Russian",
+            ['M'] = "Simplified Chinese",
+        };
+    }
+
+    public class DatFile
     {
         public char Letter;
         public string Language = null;
@@ -17,19 +36,26 @@ namespace Ace7LocalizationFormat.Formats
             return Letter + " - " + Language;
         }
 
+        public DatFile(string path)
+        {
+            Letter = Path.GetFileNameWithoutExtension(path)[0];
+            Language = DatConstants.DatLetters[Letter];
+            Read(path, Letter);
+        }
+
         /// <summary>
         /// Read a DAT file from a path
         /// </summary>
         /// <param name="path">The path of the DAT file</param>
         /// <param name="letter">The name of the DAT file</param>
-        public DAT(string path, char letter)
+        public DatFile(string path, char letter)
         {
             Letter = letter;
-            Language = AceLocalizationConstants.DatLetters[Letter];
+            Language = DatConstants.DatLetters[Letter];
             Read(path, letter);
         }
 
-        public DAT(byte[] data, char letter)
+        public DatFile(byte[] data, char letter)
         {
             Letter = letter;
             Read(data, letter);
