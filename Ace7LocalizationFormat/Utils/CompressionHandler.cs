@@ -12,7 +12,7 @@ namespace Ace7LocalizationFormat.Utils
         /// <summary>
         /// Decompress a zlib data
         /// </summary>
-        /// <param name="data">Buffer that is decompressed</param>
+        /// <param name="data">The compressed buffer</param>
         /// <returns>A decompressed zlib buffer</returns>
         public static byte[] Decompress(byte[] data)
         {
@@ -34,7 +34,7 @@ namespace Ace7LocalizationFormat.Utils
         /// <summary>
         /// Compress data to zlib
         /// </summary>
-        /// <param name="data">Buffer that is compressed</param>
+        /// <param name="data">The decompressed buffer</param>
         /// <returns>A compressed zlib buffer</returns>
         public static byte[] Compress(byte[] data)
         {
