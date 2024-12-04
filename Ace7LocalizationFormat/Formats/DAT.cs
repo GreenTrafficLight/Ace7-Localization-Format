@@ -58,6 +58,7 @@ namespace Ace7LocalizationFormat.Formats
         public DatFile(byte[] data, char letter)
         {
             Letter = letter;
+            Language = DatConstants.DatLetters[Letter];
             Read(data, letter);
         }
 
