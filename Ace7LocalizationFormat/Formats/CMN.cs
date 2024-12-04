@@ -115,7 +115,9 @@ namespace Ace7LocalizationFormat.Formats
                     MaxStringNumber = stringNumber;
                 }
                 CmnString cmnString = new CmnString(stringNumber, name, fullName + name, parent);
-                node.Add(name, cmnString);
+                if (!node.ContainsKey(name)){
+                    node.Add(name, cmnString);
+                }
                 ReadVariables(br, node[name], node[name].Childrens, fullName + name);
             }
         }
