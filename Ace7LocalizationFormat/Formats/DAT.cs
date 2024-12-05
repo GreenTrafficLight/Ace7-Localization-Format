@@ -146,7 +146,33 @@ namespace Ace7LocalizationFormat.Formats
 
             data = Crypt(data, size);
 
+            string directoryPath = Path.GetDirectoryName(filepath);
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
             File.WriteAllBytes(filepath, data);
+        }
+
+        public void Write(string filepath)
+        {
+            DATBinaryWriter bw = new DATBinaryWriter();
+
+            WriteStrings(bw);
+
+            byte[] data = bw.DATBinaryWriterData.ToArray();
+
+            data = CompressionHandler.Compress(data);
+            uint size = ((uint)data.Length + Letter - 65);
+
+            data = Crypt(data, size);
+
+            string directoryPath = Path.GetDirectoryName(filepath);
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            File.WriteAllBytes(filepath + Letter + ".dat", data);
         }
 
         /// <summary>

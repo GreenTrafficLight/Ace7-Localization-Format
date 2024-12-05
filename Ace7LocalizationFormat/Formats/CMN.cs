@@ -95,6 +95,10 @@ namespace Ace7LocalizationFormat.Formats
             uint size = (uint)data.Length;
             data = DatFile.Crypt(data, size);
 
+            string directoryPath = Path.GetDirectoryName(path);
+            if (!Directory.Exists(directoryPath)){
+                Directory.CreateDirectory(directoryPath);
+            }
             File.WriteAllBytes(path, data);
         }
 
@@ -129,20 +133,105 @@ namespace Ace7LocalizationFormat.Formats
         /// <param name="parent"></param>
         private void WriteVariables(DATBinaryWriter bw, CmnString parent)
         {
-            bw.WriteInt(parent.Name.Length);
-            bw.WriteString(parent.Name);
+            bw.WriteInt(parent.Key.Length);
+            bw.WriteString(parent.Key);
             bw.WriteInt(parent.StringNumber);
             bw.WriteInt(parent.Childrens.Count);
             foreach (CmnString child in parent.Childrens.Values)
                 WriteVariables(bw, child);
         }
 
-        public void AddVariable(string newVariableName, SortedDictionary<string, CmnString> parent)
+        /// <summary>
+        /// Add a new variable to the Cmn
+        /// </summary>
+        /// <param name="newVariableName">The variable name that will be added to the parent</param>
+        /// <param name="parent">The parent where the new variable will be added</param>
+        /// <returns>
+        /// If the new variable has been added
+        /// </returns>
+        public bool AddVariable(string newVariableName, SortedDictionary<string, CmnString> parent)
         {
-            MergeVariable(newVariableName, GetVariable(newVariableName, parent));
-            MaxStringNumber++;
+            CmnString parentCmnString = GetVariable(newVariableName, parent, out bool alreadyExist);
+            if (!alreadyExist)
+            {
+                MaxStringNumber++;
+                MergeVariable(newVariableName, parentCmnString);
+                return true;
+            }
+            return false;
         }
 
+        /// <summary>
+        /// Search a variable inside the parent
+        /// </summary>
+        /// <param name="variableName">The variable name to be search</param>
+        /// <param name="parent">Where the variable name will start to be searched</param>
+        /// <param name="alredyExist">If the variable name already exist</param>
+        /// <returns>
+        /// The parent CmnString of the variable searched
+        /// </returns>
+        public CmnString GetVariable(string variableName, SortedDictionary<string, CmnString> parent, out bool alredyExist)
+        {
+            CmnString parentCmnString = null;
+            alredyExist = false;
+
+            /*while (true)
+            {
+                bool updated = false;
+                foreach (string key in parent.Keys)
+                {
+                    int subStringIndex = StringUtils.GetCommonSubstringIndex(key, variableName);
+
+                    if (subStringIndex != -1)
+                    {
+                        string matchingKey = variableName.Substring(0, subStringIndex + 1);
+                        variableName = variableName.Substring(matchingKey.Length);
+                        if (variableName == "")
+                        {
+                            alredyExist = true;
+                        }
+                        if (!parent.ContainsKey(matchingKey)){
+                            return parentCmnString;
+                        }
+                        parentCmnString = parent[matchingKey];
+                        parent = parent[matchingKey].Childrens;
+                        updated = true;
+                        break; // Restart iteration
+                    }
+                }
+                if (!updated) break; // Exit if no updates
+            }*/
+
+            while (true)
+            {
+                string matchingKey = parent.Keys
+                    .Where(key => variableName.StartsWith(key))
+                    .OrderByDescending(key => key.Length) // Sort by length to get the longest match
+                    .FirstOrDefault(); // Take the first match
+
+                if (variableName == "")
+                {
+                    alredyExist = true;
+                }
+
+                if (matchingKey == null)
+                {
+                    return parentCmnString;
+                }
+                variableName = variableName.Substring(matchingKey.Length);
+                parentCmnString = parent[matchingKey];
+                parent = parent[matchingKey].Childrens;
+            }
+        }
+
+        /// <summary>
+        /// Search a variable inside the parent
+        /// </summary>
+        /// <param name="variableName">The variable name to be search</param>
+        /// <param name="parent">Where the variable name will start to be searched</param>
+        /// <returns>
+        /// The parent CmnString of the variable searched
+        /// </returns>
         public CmnString GetVariable(string variableName, SortedDictionary<string, CmnString> parent)
         {
             CmnString parentCmnString = null;
@@ -169,6 +258,7 @@ namespace Ace7LocalizationFormat.Formats
             {
                 int subStringIndex = StringUtils.GetCommonSubstringIndex(key, newVariableName);
 
+                // Merge the nodes
                 if (subStringIndex != -1)
                 {
                     // Merged Node
@@ -195,6 +285,8 @@ namespace Ace7LocalizationFormat.Formats
                     return;
                 }
             }
+            // Add the new node
+            newVariableName = newVariableName.Substring(parent.Name.Length);
             parent.Childrens.Add(newVariableName, new CmnString(MaxStringNumber, newVariableName, parent.Name + newVariableName, parent));
         }
     }
