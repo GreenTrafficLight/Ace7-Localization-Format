@@ -155,7 +155,7 @@ namespace Ace7LocalizationFormat.Formats
             if (!alreadyExist)
             {
                 MaxStringNumber++;
-                MergeVariable(newVariableName, parentCmnString);
+                MergeVariable(newVariableName.Substring(parentCmnString.Name.Length), parentCmnString);
                 return true;
             }
             return false;
@@ -175,7 +175,7 @@ namespace Ace7LocalizationFormat.Formats
             CmnString parentCmnString = null;
             alredyExist = false;
 
-            /*while (true)
+            while (true)
             {
                 bool updated = false;
                 foreach (string key in parent.Keys)
@@ -186,10 +186,12 @@ namespace Ace7LocalizationFormat.Formats
                     {
                         string matchingKey = variableName.Substring(0, subStringIndex + 1);
                         variableName = variableName.Substring(matchingKey.Length);
+                        // If the variable already exist
                         if (variableName == "")
                         {
                             alredyExist = true;
                         }
+                        // If the variable doesn't exist
                         if (!parent.ContainsKey(matchingKey)){
                             return parentCmnString;
                         }
@@ -200,28 +202,8 @@ namespace Ace7LocalizationFormat.Formats
                     }
                 }
                 if (!updated) break; // Exit if no updates
-            }*/
-
-            while (true)
-            {
-                string matchingKey = parent.Keys
-                    .Where(key => variableName.StartsWith(key))
-                    .OrderByDescending(key => key.Length) // Sort by length to get the longest match
-                    .FirstOrDefault(); // Take the first match
-
-                if (variableName == "")
-                {
-                    alredyExist = true;
-                }
-
-                if (matchingKey == null)
-                {
-                    return parentCmnString;
-                }
-                variableName = variableName.Substring(matchingKey.Length);
-                parentCmnString = parent[matchingKey];
-                parent = parent[matchingKey].Childrens;
             }
+            return parentCmnString;
         }
 
         /// <summary>
@@ -235,21 +217,31 @@ namespace Ace7LocalizationFormat.Formats
         public CmnString GetVariable(string variableName, SortedDictionary<string, CmnString> parent)
         {
             CmnString parentCmnString = null;
+
             while (true)
             {
-                string matchingKey = parent.Keys
-                    .Where(key => variableName.StartsWith(key))
-                    .OrderByDescending(key => key.Length) // Sort by length to get the longest match
-                    .FirstOrDefault(); // Take the first match
-
-                if (matchingKey == null)
+                bool updated = false;
+                foreach (string key in parent.Keys)
                 {
-                    return parentCmnString;
+                    int subStringIndex = StringUtils.GetCommonSubstringIndex(key, variableName);
+
+                    if (subStringIndex != -1)
+                    {
+                        string matchingKey = variableName.Substring(0, subStringIndex + 1);
+                        variableName = variableName.Substring(matchingKey.Length);
+                        if (!parent.ContainsKey(matchingKey))
+                        {
+                            return parentCmnString;
+                        }
+                        parentCmnString = parent[matchingKey];
+                        parent = parent[matchingKey].Childrens;
+                        updated = true;
+                        break; // Restart iteration
+                    }
                 }
-                variableName = variableName.Substring(matchingKey.Length);
-                parentCmnString = parent[matchingKey];
-                parent = parent[matchingKey].Childrens;
+                if (!updated) break; // Exit if no updates
             }
+            return parentCmnString;
         }
 
         public void MergeVariable(string newVariableName, CmnString parent)
@@ -286,7 +278,6 @@ namespace Ace7LocalizationFormat.Formats
                 }
             }
             // Add the new node
-            newVariableName = newVariableName.Substring(parent.Name.Length);
             parent.Childrens.Add(newVariableName, new CmnString(MaxStringNumber, newVariableName, parent.Name + newVariableName, parent));
         }
     }
