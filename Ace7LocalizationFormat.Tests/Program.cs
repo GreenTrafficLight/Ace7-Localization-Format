@@ -12,12 +12,11 @@ namespace Ace7LocalizationFormat.Tests
             CmnFile Cmn = new CmnFile(cmnPath);
             DatFile dat = new DatFile(datPath);
 
-            int test = Cmn["AircraftShort_Name_a10a"];
+            Cmn.AddVariable("AircraftShort_Name_a10a", Cmn.Root);
+            Cmn.AddVariable("AircraftShort_Name_trndf3", Cmn.Root);
+            Cmn.AddVariable("AircraftShort_Name_trnd", Cmn.Root);
 
-            Cmn.AddVariable("AircraftShort_Name_a10b", Cmn.Root);
-            Cmn.AddVariable("AircraftShort_Name_a10bc", Cmn.Root);
-
-            //int test = Cmn["AircraftShort_Name_a10a"];
+            int test = Cmn["AircraftShort_Name_trnd"];
 
             Console.WriteLine();
         }
