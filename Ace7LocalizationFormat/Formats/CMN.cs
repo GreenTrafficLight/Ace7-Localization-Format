@@ -162,6 +162,26 @@ namespace Ace7LocalizationFormat.Formats
         }
 
         /// <summary>
+        /// Add a new variable to the Cmn
+        /// </summary>
+        /// <param name="newCmnstring">The variable that will be added to the parent</param>
+        /// <param name="parent">The parent where the new variable will be added</param>
+        /// <returns>
+        /// If the new variable has been added
+        /// </returns>
+        public bool AddVariable(CmnString newCmnstring, SortedDictionary<string, CmnString> parent)
+        {
+            CmnString parentCmnString = GetVariable(newCmnstring.Name, parent, out bool alreadyExist);
+            if (!alreadyExist)
+            {
+                MaxStringNumber++;
+                MergeVariable(newCmnstring, parentCmnString);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Search a variable inside the parent
         /// </summary>
         /// <param name="variableName">The variable name to be search</param>
@@ -247,7 +267,12 @@ namespace Ace7LocalizationFormat.Formats
             }
             return parentCmnString;
         }
-
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="newVariableName"></param>
+        /// <param name="parent"></param>
         public void MergeVariable(string newVariableName, CmnString parent)
         {
             foreach (string key in parent.Childrens.Keys)
@@ -288,6 +313,60 @@ namespace Ace7LocalizationFormat.Formats
             }
             // Add the new node
             parent.Childrens.Add(newVariableName, new CmnString(MaxStringNumber, newVariableName, parent.Name + newVariableName, parent));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="newVariableName"></param>
+        /// <param name="parent"></param>
+        public void MergeVariable(CmnString newVariableName, CmnString parent)
+        {
+            string test = newVariableName.Name.Substring(parent.Name.Length);
+            foreach (string key in parent.Childrens.Keys)
+            {
+                int subStringIndex = StringUtils.GetCommonSubstringIndex(key, test);
+
+                // Merge the nodes
+                if (subStringIndex != -1)
+                {
+                    // Merged Node
+                    string mergedCmnStringKey = key.Substring(0, subStringIndex + 1); // Merged node name
+                    CmnString mergedCmnString = new CmnString(-1, mergedCmnStringKey, parent.Name + mergedCmnStringKey, parent);
+
+                    // Existing Node (going to be added to the merged node
+                    string existingCmnStringKey = key.Substring(subStringIndex + 1);
+                    CmnString existingCmnString = new CmnString(parent.Childrens[key].StringNumber, existingCmnStringKey, mergedCmnString.Name + existingCmnStringKey, parent);
+                    // Copy the children of the existing node to this one
+                    existingCmnString.Childrens = new SortedDictionary<string, CmnString>(parent.Childrens[key].Childrens);
+                    mergedCmnString.Childrens.Add(existingCmnStringKey, existingCmnString);
+
+                    // New Node
+                    string newCmnStringKey = test.Substring(subStringIndex + 1);
+                    if (newCmnStringKey != "")
+                    {
+                        CmnString newCmnString = new CmnString(MaxStringNumber, newCmnStringKey, mergedCmnString.Name + newCmnStringKey, parent);
+                        mergedCmnString.Childrens.Add(newCmnStringKey, newCmnString);
+                    }
+                    else if (newVariableName.StringNumber != -1)
+                    {
+                        // Merged node that contains a string
+                        mergedCmnString.StringNumber = MaxStringNumber;
+                        Console.WriteLine(newVariableName.Name);
+                    }
+
+
+                    // Remove the existing node from the parent
+                    parent.Childrens.Remove(key);
+
+                    // Add the merged node in the parent
+                    parent.Childrens.Add(mergedCmnStringKey, mergedCmnString);
+
+                    return;
+                }
+            }
+            // Add the new node
+            parent.Childrens.Add(test, new CmnString(MaxStringNumber, test, parent.Name + test, parent));
         }
     }
 }
