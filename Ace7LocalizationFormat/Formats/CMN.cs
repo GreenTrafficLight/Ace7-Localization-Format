@@ -167,7 +167,7 @@ namespace Ace7LocalizationFormat.Formats
         /// <param name="newCmnstring">The variable that will be added to the parent</param>
         /// <param name="parent">The parent where the new variable will be added</param>
         /// <returns>
-        /// If the new variable has been added
+        /// If the new variable has been added.
         /// </returns>
         public bool AddVariable(CmnString newCmnstring, SortedDictionary<string, CmnString> parent)
         {
@@ -176,8 +176,26 @@ namespace Ace7LocalizationFormat.Formats
             {
                 MaxStringNumber++;
                 MergeVariable(newCmnstring, parentCmnString);
+#if DEBUG
+                Console.WriteLine($"Added variable : {newCmnstring.Name}");
+#endif
                 return true;
             }
+            else if (alreadyExist && parentCmnString.StringNumber != newCmnstring.StringNumber && parentCmnString.StringNumber == -1)
+            {
+                // The parentCmnString is the existing variable name
+                // Update the string number of it
+                // Brute force way to fix later, will probs create more problems
+                MaxStringNumber++;
+                parentCmnString.StringNumber = MaxStringNumber;
+
+                Console.WriteLine($"Updated existing variable : {newCmnstring.Name}");
+
+                return true;
+            }
+#if DEBUG
+            Console.WriteLine($"Variable not added : {newCmnstring.Name}");
+#endif
             return false;
         }
 
