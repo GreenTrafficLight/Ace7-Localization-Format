@@ -318,14 +318,14 @@ namespace Ace7LocalizationFormat.Formats
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="newVariableName"></param>
+        /// <param name="addCmnString"></param>
         /// <param name="parent"></param>
-        public void MergeVariable(CmnString newVariableName, CmnString parent)
+        public void MergeVariable(CmnString addCmnString, CmnString parent)
         {
-            string test = newVariableName.Name.Substring(parent.Name.Length);
+            string newVariableName = addCmnString.Name.Substring(parent.Name.Length);
             foreach (string key in parent.Childrens.Keys)
             {
-                int subStringIndex = StringUtils.GetCommonSubstringIndex(key, test);
+                int subStringIndex = StringUtils.GetCommonSubstringIndex(key, newVariableName);
 
                 // Merge the nodes
                 if (subStringIndex != -1)
@@ -342,19 +342,20 @@ namespace Ace7LocalizationFormat.Formats
                     mergedCmnString.Childrens.Add(existingCmnStringKey, existingCmnString);
 
                     // New Node
-                    string newCmnStringKey = test.Substring(subStringIndex + 1);
+                    string newCmnStringKey = newVariableName.Substring(subStringIndex + 1);
                     if (newCmnStringKey != "")
                     {
                         CmnString newCmnString = new CmnString(MaxStringNumber, newCmnStringKey, mergedCmnString.Name + newCmnStringKey, parent);
                         mergedCmnString.Childrens.Add(newCmnStringKey, newCmnString);
                     }
-                    else if (newVariableName.StringNumber != -1)
+                    else if (addCmnString.StringNumber != -1)
                     {
                         // Merged node that contains a string
                         mergedCmnString.StringNumber = MaxStringNumber;
-                        Console.WriteLine(newVariableName.Name);
+#if DEBUG
+                        Console.WriteLine($"Merged node that contains a string : {addCmnString.Name}");
+#endif
                     }
-
 
                     // Remove the existing node from the parent
                     parent.Childrens.Remove(key);
@@ -366,7 +367,7 @@ namespace Ace7LocalizationFormat.Formats
                 }
             }
             // Add the new node
-            parent.Childrens.Add(test, new CmnString(MaxStringNumber, test, parent.Name + test, parent));
+            parent.Childrens.Add(newVariableName, new CmnString(MaxStringNumber, newVariableName, parent.Name + newVariableName, parent));
         }
     }
 }
